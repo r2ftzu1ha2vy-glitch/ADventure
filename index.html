@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOTALLY FAIR PLATFORMER 😇</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Courier New',monospace;color:#fff;overflow:hidden;user-select:none}
+#topbar{width:820px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,.05);border-radius:6px 6px 0 0}
+#deaths-display{font-size:16px;font-weight:bold;color:#f87171;min-width:140px;transition:font-size .3s}
+.rage-wrap{display:flex;flex-direction:column;align-items:center}
+.rage-lbl{font-size:9px;color:#888;letter-spacing:1px;margin-bottom:2px}
+.rage-bg{width:160px;height:10px;background:#333;border-radius:5px;overflow:hidden}
+#rage-fill{height:100%;width:0%;background:linear-gradient(90deg,#fbbf24,#ef4444);transition:width .3s;border-radius:5px}
+#progress-wrap{display:flex;flex-direction:column;align-items:center}
+.prog-lbl{font-size:9px;color:#888;letter-spacing:1px;margin-bottom:2px}
+.prog-bg{width:120px;height:10px;background:#333;border-radius:5px;overflow:hidden}
+#prog-fill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .5s;border-radius:5px}
+#give-up{background:#dc2626;color:#fff;border:none;padding:5px 14px;border-radius:4px;cursor:pointer;font:bold 13px 'Courier New',monospace;transition:all .3s}
+#give-up:hover{background:#ef4444;transform:scale(1.05)}
+#game-wrap{position:relative;display:inline-block}
+canvas{display:block;border:2px solid #7c3aed;box-shadow:0 0 40px #7c3aed44;transition:transform .1s}
+#msg-banner{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:#ff3366;font:bold 20px 'Courier New',monospace;padding:10px 22px;border-radius:8px;border:2px solid #ff3366;text-align:center;pointer-events:none;opacity:0;transition:opacity .25s;z-index:99;max-width:700px;white-space:pre-line}
+#fake-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:2px solid #ff3366;border-radius:10px;padding:24px 30px;text-align:center;z-index:200;display:none;box-shadow:0 0 60px rgba(255,51,102,.4)}
+#fake-popup h3{color:#ff3366;font-size:18px;margin-bottom:12px}
+#fake-popup p{color:#aaa;font-size:13px;margin-bottom:16px}
+#fake-popup button{margin:0 8px;padding:8px 20px;border:none;border-radius:4px;font:bold 13px 'Courier New',monospace;cursor:pointer}
+.popup-yes{background:#22c55e;color:#fff}
+.popup-no{background:#dc2626;color:#fff}
+#hint{color:#555;font-size:11px;margin-top:4px}
+#fake-ad{position:fixed;bottom:10px;right:10px;background:#111;border:1px solid #333;border-radius:6px;padding:12px 16px;display:none;z-index:150;max-width:220px;font-size:11px;color:#888}
+#fake-ad .close-ad{position:absolute;top:2px;right:6px;cursor:pointer;color:#555;font-size:14px}
+#screen-tilt{display:contents}
+
+/* ─── POPUP ADS SYSTEM ─── */
+.popup-ad{position:fixed;z-index:300;background:#111;border:2px solid;border-radius:8px;padding:0;overflow:hidden;box-shadow:0 0 30px rgba(0,0,0,.8);font-family:'Courier New',monospace;animation:adSlam .3s ease-out}
+@keyframes adSlam{0%{transform:scale(0) rotate(10deg);opacity:0}70%{transform:scale(1.1) rotate(-2deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.popup-ad .ad-header{display:flex;align-items:center;justify-content:space-between;padding:4px 8px;font-size:9px;color:#666;background:#0a0a0a;border-bottom:1px solid #222}
+.popup-ad .ad-close{width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#444;font-size:10px;border-radius:3px;transition:all .15s}
+.popup-ad .ad-close:hover{background:#333;color:#fff}
+.popup-ad .ad-body{padding:10px 12px;text-align:center;color:#ccc;font-size:11px}
+.popup-ad .ad-body .ad-title{font-weight:bold;font-size:13px;margin-bottom:6px}
+.popup-ad .ad-body .ad-cta{display:inline-block;margin-top:8px;padding:5px 16px;border-radius:4px;font:bold 11px 'Courier New',monospace;cursor:pointer;border:none;color:#fff}
+.popup-ad .ad-body img{display:none}
+.popup-ad .fake-progress{height:3px;background:#222;margin-top:6px;border-radius:2px;overflow:hidden}
+.popup-ad .fake-progress span{display:block;height:100%;width:0%;border-radius:2px;animation:fakeLoad 15s linear forwards}
+@keyframes fakeLoad{0%{width:0%}80%{width:92%}95%{width:94%}100%{width:94%}}
+.ad-overlay{position:fixed;inset:0;z-index:290;background:rgba(0,0,0,.4);display:none;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.popup-ad .tiny-close{font-size:5px!important;color:#1a1a1a!important;width:8px!important;height:8px!important}
+.popup-ad .moving-close{transition:margin .3s}
+.popup-ad .fake-x{cursor:pointer;color:#444;font-size:10px}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div id="deaths-display">💀 Deaths: 0</div>
+  <div id="progress-wrap">
+    <div class="prog-lbl">PROGRESS</div>
+    <div class="prog-bg"><div id="prog-fill"></div></div>
+  </div>
+  <div class="rage-wrap">
+    <div class="rage-lbl">RAGE LEVEL</div>
+    <div class="rage-bg"><div id="rage-fill"></div></div>
+  </div>
+  <button id="give-up" onclick="triggerGiveUp()">😤 I GIVE UP</button>
+</div>
+<div id="game-wrap">
+  <canvas id="game" width="820" height="460"></canvas>
+</div>
+<div id="msg-banner"></div>
+<div id="hint">← → / A D : Move &nbsp;|&nbsp; Space / ↑ / W : Jump (double jump!)</div>
+
+<div id="fake-popup">
+  <h3 id="popup-title"></h3>
+  <p id="popup-text"></p>
+  <button class="popup-yes" id="popup-yes">Yes</button>
+  <button class="popup-no" id="popup-no">No</button>
+</div>
+
+<div id="fake-ad">
+  <span class="close-ad" onclick="closeAd()">✕</span>
+  <div style="color:#ff6b6b;font-weight:bold;margin-bottom:4px">🔥 HOT SINGLES IN YOUR AREA</div>
+  <div>want to watch you fail at this game</div>
+</div>
+<div class="ad-overlay" id="ad-overlay"></div>
+<div id="ad-container"></div>
+
+<script>
+// ─── SETUP ────────────────────────────────────────────
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const msgEl = document.getElementById('msg-banner');
+const CW = 820, CH = 460;
+
+// ─── PHYSICS ──────────────────────────────────────────
+const GRAV = 0.55, JUMP = -13.2, MOVE_ACC = 0.85, MAX_VX = 6.5;
+const FRIC = 0.78, ICE_FRIC = 0.985;
+
+// ─── TAUNTS ───────────────────────────────────────────
+const TAUNTS = [
+  "Oops! Try again 😊",
+  "So close! (not really)",
+  "Skill issue.",
+  "Hmm. Maybe watch a tutorial?",
+  "The platform moved? No it didn't. 🙂",
+  "Have you tried pressing the right buttons?",
+  "Gravity isn't a suggestion.",
+  "You got this! (you don't)",
+  "Maybe take a break? Nah keep going.",
+  "Wow. Just... wow.",
+  "🏆 Achievement Unlocked: Professional Failure",
+  "I've seen potatoes dodge better.",
+  "At this point, the game is winning.",
+  "My grandma plays better. She's been dead 15 years.",
+  "THESE PLATFORMS ARE TOTALLY FAIR BTW",
+  "You could just... not play? 🤷",
+  "Statistically you WILL beat it. Statistically.",
+  "I believe in you! Terms and conditions apply.",
+  "Legendary skill issue achieved! 🌟",
+  "Your persistence is both admirable and sad.",
+  "Fun fact: the first person beat this with 0 deaths. (I lied)",
+  "Some doors were not meant to be entered.",
+  "It's okay to cry. In fact, please do.",
+  "The game respects your commitment. I don't.",
+  "You're getting worse. That's actually impressive.",
+  "Consider a career change from gaming.",
+  "The platforms are laughing at you.",
+  "Have you tried rage-clicking? Can't hurt.",
+  "🎉 HALL OF SHAME INDUCTEE!",
+  "At this point you ARE the game.",
+  "Most people quit by death 5. You are built different.",
+  "I'm actually impressed you're still here.",
+  "Your keyboard must be so tired.",
+  "Plot twist: there's no real exit. (jk... unless?)",
+  "This game was designed by someone who hates you specifically.",
+  "UNINSTALL SPEEDRUN ANY%",
+  "Your mouse is trying to leave.",
+  "Did you know rage-quitting burns calories?",
+  "The platforms have filed a restraining order.",
+  "Error 418: You are a teapot. A bad one.",
+];
+
+const GIVE_UP_MSGS = [
+  "lmao no",
+  "Try again :)",
+  "The game doesn't accept surrenders.",
+  "Quitters never win! You're not winning either though.",
+  "Error 404: Give Up function not found.",
+  "You'll regret quitting! Actually no you won't.",
+  "Resetting you to start. For fun. 😈",
+  "Alt+F4 is always an option. Just saying.",
+  "The button is purely decorative.",
+  "I'm afraid I can't let you do that.",
+  "Surrender accepted! LOL no it isn't.",
+];
+
+// ─── STATE ────────────────────────────────────────────
+let deaths = 0, rage = 0, cameraX = 0, gameWon = false;
+let keys = {}, prevKeys = {};
+let ctrlFlipped = false, ctrlTimer = 0;
+let fakeWinPhase = 0, fakeWinTimer = 0;
+let particles = [], msgTimer = 0;
+let screenShake = 0;
+let gravFlipped = false, gravFlipTimer = 0;
+let fakeLagTimer = 0, fakeLagDuration = 0;
+let jumpNerfed = false; // silently nerf jump height
+let ghostTrails = []; // fake ghost players
+let adShown = false;
+let progressLie = 0; // fake progress bar
+let giveUpClicks = 0;
+let popupActive = false;
+let tiltAngle = 0;
+let invisWallActive = false, invisWallX = 0;
+let fakeErrorShown = false;
+let hintSwapped = false;
+let coinBombs = [];
+let phantomPlatforms = [];
+let deathStreakNoJump = 0;
+let rubberBanding = false;
+let volumeWarningShown = false;
+let jumpScareReady = false;
+
+const P = {
+  x:100, y:300, vx:0, vy:0, w:26, h:34,
+  onGround:false, onIce:false, jumps:2,
+  squish:1, dead:false, facing:1, blinkT:0,
+  spawnX:100, spawnY:300
+};
+
+// ─── LEVEL DATA ───────────────────────────────────────
+
+const PLATS = [
+  // INTRO - looks easy
+  {x:0,y:390,w:320,h:20,t:'solid'},
+  {x:370,y:380,w:130,h:20,t:'solid'},
+  {x:550,y:370,w:130,h:20,t:'solid'},
+
+  // CRUMBLE ZONE
+  {x:730,y:360,w:120,h:20,t:'crumble',label:'SAFE PLATFORM ✓'},
+  {x:900,y:352,w:110,h:20,t:'solid'},
+  {x:1060,y:345,w:110,h:20,t:'crumble',label:'ALSO SAFE ✓✓'},
+  {x:1220,y:340,w:100,h:20,t:'solid'},
+  {x:1370,y:335,w:110,h:20,t:'crumble',label:'SAFEST EVER ✓✓✓'},
+  {x:1530,y:330,w:100,h:20,t:'solid'},
+
+  // FAKE CHECKPOINT
+  {x:1680,y:345,w:250,h:20,t:'solid'},
+  {x:1770,y:295,w:110,h:20,t:'checkpt',label:'★ CHECKPOINT ★'},
+  {x:1980,y:345,w:120,h:20,t:'solid'},
+
+  // GRAVITY FLIP ZONE
+  {x:2100,y:350,w:100,h:20,t:'solid'},
+  {x:2250,y:340,w:90,h:20,t:'gravflip',label:'🌀 GRAVITY BOOST'},
+  {x:2400,y:100,w:110,h:20,t:'solid'},  // ceiling platform for gravity flip
+  {x:2550,y:350,w:90,h:20,t:'solid'},
+
+  // COIN BOMB AREA
+  {x:2700,y:345,w:200,h:20,t:'solid'},
+  {x:2960,y:330,w:90,h:20,t:'solid'},
+  {x:3100,y:318,w:90,h:20,t:'solid'},
+
+  // MOVING / DODGING
+  {x:3250,y:340,w:90,h:20,t:'solid'},
+  {x:3400,y:320,w:85,h:20,t:'moving',spd:1.8,range:70,dodge:true},
+  {x:3560,y:300,w:85,h:20,t:'moving',spd:2.2,range:65,dodge:true},
+  {x:3720,y:285,w:80,h:20,t:'moving',spd:2.8,range:60,dodge:true},
+  {x:3870,y:300,w:100,h:20,t:'solid'},
+
+  // SPRING TRAP
+  {x:4020,y:345,w:120,h:20,t:'solid'},
+  {x:4190,y:355,w:90,h:20,t:'spring',label:'🚀 SUPER JUMP!'},
+  {x:4340,y:340,w:120,h:20,t:'solid'},
+
+  // FAKE WIN
+  {x:4510,y:350,w:200,h:20,t:'solid'},
+
+  // CONTROLS FLIP
+  {x:4860,y:350,w:100,h:20,t:'solid'},
+  {x:5020,y:350,w:110,h:20,t:'flipctrl',label:'⚡ SPEED BOOST ⚡'},
+  {x:5190,y:335,w:90,h:20,t:'solid'},
+  {x:5340,y:318,w:80,h:20,t:'icy'},
+
+  // PHANTOM ZONE - platforms that appear/disappear
+  {x:5490,y:340,w:70,h:20,t:'phantom',label:'???'},
+  {x:5620,y:320,w:70,h:20,t:'solid'},
+  {x:5750,y:300,w:70,h:20,t:'phantom',label:'???'},
+  {x:5880,y:280,w:70,h:20,t:'solid'},
+
+  // PRECISION
+  {x:6030,y:340,w:42,h:20,t:'solid'},
+  {x:6140,y:318,w:38,h:20,t:'solid'},
+  {x:6240,y:296,w:34,h:20,t:'shrinking'},
+
+  // REAL WIN
+  {x:6380,y:296,w:140,h:20,t:'solid'},
+];
+
+// Shrinking platform state
+let shrinkTimer = {};
+PLATS.forEach((p,i) => {
+  if (p.t === 'shrinking') shrinkTimer[i] = {origW: p.w, timer: 0, shrinking: false};
+});
+
+// Init moving platform state
+PLATS.forEach(p => {
+  if (p.t === 'moving') { p._startX = p.x; p._dir = 1; }
+});
+
+// Crumble state
+const crumble = {};
+PLATS.forEach((p,i) => {
+  if (p.t === 'crumble') crumble[i] = {phase:0,timer:0,dy:0,vy:0};
+});
+
+// Phantom platform state
+let phantomState = {};
+PLATS.forEach((p,i) => {
+  if (p.t === 'phantom') phantomState[i] = {visible: true, timer: Math.random()*2000};
+});
+
+// Doors
+const DOORS = [
+  {x:4590,y:270,w:55,h:80,type:'fake'},
+  {x:6420,y:216,w:55,h:80,type:'real'},
+];
+
+// Spikes
+const SPIKES = [
+  {x:1470,y:CH-25,w:140,dir:'up'},
+  {x:4150,y:0,w:180,dir:'down'},
+  {x:4700,y:CH-25,w:120,dir:'up'},
+  {x:5100,y:CH-25,w:100,dir:'up'},
+  {x:6080,y:CH-25,w:55,dir:'up'},
+  {x:6180,y:CH-25,w:55,dir:'up'},
+];
+
+// Coin bombs (look like collectibles but kill you)
+coinBombs = [
+  {x:2770,y:300,collected:false,explodeTimer:0,exploding:false},
+  {x:2830,y:285,collected:false,explodeTimer:0,exploding:false},
+  {x:2890,y:270,collected:false,explodeTimer:0,exploding:false},
+  {x:3000,y:290,collected:false,explodeTimer:0,exploding:false},
+];
+
+// Signs
+const SIGNS = [
+  {x:60,y:318,lines:["TOTALLY FAIR PLATFORMER","-- no tricks, promise 😇"]},
+  {x:360,y:305,lines:["←→ / AD: Move","Space/↑/W: Jump","(double jump allowed!)"]},
+  {x:710,y:286,lines:["These platforms are","completely stable.","Trust the green ✓"]},
+  {x:1680,y:268,lines:["A checkpoint! Nice!","Those ALWAYS save","your progress 👍"]},
+  {x:2090,y:275,lines:["Gravity Boost!","Totally normal.","100% safe 🙃"]},
+  {x:2690,y:268,lines:["💰 COLLECT COINS!","Free extra lives!","(definitely not bombs)"]},
+  {x:3240,y:265,lines:["Moving platforms!","Very predictable","and friendly :)"]},
+  {x:4010,y:290,lines:["SHORTCUT!","Super Jump ahead!","Saves SO much time!"]},
+  {x:4515,y:275,lines:["🎉 EXIT AHEAD! 🎉","You made it!","(definitely for real)"]},
+  {x:5010,y:275,lines:["⚡ Collect the","Speed Boost!","Makes you FASTER!"]},
+  {x:5480,y:260,lines:["These platforms","might exist.","Or might not. 🤷"]},
+  {x:6100,y:250,lines:["THE REAL EXIT →","(no seriously","this time... maybe)"]},
+];
+
+// Ghost trails - fake "other players" that die hilariously
+function spawnGhost() {
+  if (deaths < 3) return;
+  ghostTrails.push({
+    x: P.x + Math.random()*200 - 100,
+    y: P.y - 50,
+    vx: (Math.random()-0.5)*3,
+    vy: -8,
+    life: 1.5,
+    alpha: 0.3,
+  });
+}
+
+// ─── HELPERS ──────────────────────────────────────────
+
+function showMsg(text, dur) {
+  msgTimer = dur;
+  msgEl.textContent = text;
+  msgEl.style.opacity = '1';
+}
+
+function hideMsg() { msgEl.style.opacity = '0'; }
+
+function rect(ax,ay,aw,ah,bx,by,bw,bh) {
+  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+}
+
+function spawnParticles(x,y,count,hueMin,hueMax) {
+  for (let i=0;i<count;i++) {
+    const a = Math.random()*Math.PI*2;
+    const s = 2+Math.random()*6;
+    particles.push({
+      x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,
+      life:1,hue:hueMin+Math.random()*(hueMax-hueMin),
+      size:2+Math.random()*5
+    });
+  }
+}
+
+// ─── EVIL MECHANICS ───────────────────────────────────
+
+// Fake progress bar that lies
+function updateProgress() {
+  const realProg = Math.min(100, ((P.x) / 6400) * 100);
+  // progress bar lies - sometimes goes backwards, gets stuck at 99%
+  if (deaths > 5 && Math.random() < 0.3) {
+    progressLie = Math.max(0, progressLie - Math.random() * 8);
+  } else {
+    progressLie += (realProg - progressLie) * 0.05;
+  }
+  // Never let it reach 100
+  if (progressLie > 97) progressLie = 97 - Math.random() * 5;
+  document.getElementById('prog-fill').style.width = Math.max(0, progressLie) + '%';
+}
+
+// Shrink the give up button over time
+function updateGiveUpButton() {
+  const btn = document.getElementById('give-up');
+  const scale = Math.max(0.3, 1 - deaths * 0.03);
+  btn.style.transform = `scale(${scale})`;
+  if (deaths > 15) btn.style.opacity = Math.max(0.2, 1 - (deaths-15)*0.05);
+}
+
+// Random fake lag spikes
+function triggerFakeLag() {
+  if (deaths > 7 && Math.random() < 0.002) {
+    fakeLagDuration = 200 + Math.random() * 400;
+    fakeLagTimer = fakeLagDuration;
+  }
+}
+
+// Show fake popup dialogs
+function showFakePopup(title, text, yesText, noText, yesCb, noCb) {
+  if (popupActive) return;
+  popupActive = true;
+  const popup = document.getElementById('fake-popup');
+  document.getElementById('popup-title').textContent = title;
+  document.getElementById('popup-text').textContent = text;
+  const yesBtn = document.getElementById('popup-yes');
+  const noBtn = document.getElementById('popup-no');
+  yesBtn.textContent = yesText;
+  noBtn.textContent = noText;
+  popup.style.display = 'block';
+  
+  yesBtn.onclick = () => { popup.style.display='none'; popupActive=false; yesCb(); };
+  noBtn.onclick = () => { popup.style.display='none'; popupActive=false; noCb(); };
+}
+
+// Random evil events based on death count
+function triggerRandomEvil() {
+  const r = Math.random();
+  
+  // After 5 deaths: show fake ad
+  if (deaths === 5 && !adShown) {
+    adShown = true;
+    document.getElementById('fake-ad').style.display = 'block';
+    showMsg("Please watch this ad to continue 😊", 3000);
+  }
+  
+  // After 8 deaths: fake popup
+  if (deaths === 8) {
+    setTimeout(() => {
+      showFakePopup(
+        "⚠️ Performance Warning",
+        "Your skill level is causing lag. Lower difficulty?",
+        "Yes please!",
+        "No, I'm fine",
+        () => { showMsg("Difficulty INCREASED! Thanks for the feedback 😈", 3000); jumpNerfed = true; },
+        () => { showMsg("Difficulty INCREASED anyway! 😈", 3000); jumpNerfed = true; }
+      );
+    }, 1500);
+  }
+  
+  // After 12 deaths: swap hint text
+  if (deaths === 12 && !hintSwapped) {
+    hintSwapped = true;
+    document.getElementById('hint').innerHTML = '← → / A D : Jump &nbsp;|&nbsp; Space / ↑ / W : Move <span style="color:#333">(this hint is wrong btw)</span>';
+  }
+  
+  // After 15 deaths: canvas starts tilting
+  if (deaths >= 15) {
+    tiltAngle = Math.sin(Date.now() * 0.0003) * Math.min(3, (deaths-15) * 0.3);
+    canvas.style.transform = `rotate(${tiltAngle}deg)`;
+  }
+  
+  // After 20 deaths: show fake error
+  if (deaths === 20 && !fakeErrorShown) {
+    fakeErrorShown = true;
+    setTimeout(() => {
+      showFakePopup(
+        "❌ FATAL ERROR",
+        "Uncaught RageException: Player skill level is null. Game will restart from the beginning.",
+        "OK",
+        "Cancel",
+        () => { showMsg("Just kidding. But your spawn IS reset 😈", 3000); P.spawnX=100; P.spawnY=300; },
+        () => { showMsg("Can't cancel errors! Spawn reset 😈", 3000); P.spawnX=100; P.spawnY=300; }
+      );
+    }, 1000);
+  }
+  
+  // After 25 deaths: screen randomly flashes
+  if (deaths >= 25 && r < 0.01) {
+    screenShake = 15;
+  }
+  
+  // After 30 deaths: title changes
+  if (deaths === 30) {
+    document.title = "PLEASE STOP PLAYING";
+  }
+  if (deaths === 40) {
+    document.title = "I'M BEGGING YOU";
+  }
+}
+
+function closeAd() {
+  // Clicking X on the ad spawns MORE ads... jk just shows a message
+  showMsg("Ad closed! A new ad will appear in 30 seconds.\n(just kidding... or am I?)", 3000);
+  document.getElementById('fake-ad').style.display = 'none';
+  // Actually show it again later
+  setTimeout(() => {
+    if (deaths > 8) {
+      document.getElementById('fake-ad').style.display = 'block';
+      document.querySelector('#fake-ad div:last-child').textContent = 'You STILL can\'t beat this game?? 😂';
+    }
+  }, 45000);
+}
+window.closeAd = closeAd;
+
+// ─── GAME EVENTS ──────────────────────────────────────
+
+function die() {
+  if (P.dead||gameWon) return;
+  P.dead = true;
+  spawnParticles(P.x+P.w/2, P.y+P.h/2, 30, 0, 40);
+  deaths++;
+  screenShake = 5 + Math.min(20, deaths * 0.5);
+  rage = Math.min(100, rage + (deaths<5?12:deaths<15?8:5));
+  
+  const el = document.getElementById('deaths-display');
+  el.textContent = '💀 Deaths: '+deaths;
+  el.style.fontSize = Math.min(32, 16+deaths*0.5)+'px';
+  el.style.color = deaths>20?'#ff0000':deaths>10?'#ff4444':'#f87171';
+  
+  // After 25 deaths, death counter starts lying
+  if (deaths > 25 && Math.random() < 0.3) {
+    el.textContent = '💀 Deaths: '+(deaths + Math.floor(Math.random()*50));
+  }
+  
+  document.getElementById('rage-fill').style.width = rage+'%';
+  
+  updateGiveUpButton();
+  triggerRandomEvil();
+  spawnGhost();
+  
+  setTimeout(() => {
+    respawn();
+    showMsg(TAUNTS[Math.min(deaths-1,TAUNTS.length-1)], 2800);
+  }, 500 + (deaths > 15 ? Math.random() * 500 : 0)); // respawn gets slower
+}
+
+function respawn() {
+  P.x=P.spawnX; P.y=P.spawnY; P.vx=0; P.vy=0;
+  P.onGround=false; P.onIce=false; P.jumps=2;
+  P.squish=1; P.dead=false;
+  ctrlFlipped=false; ctrlTimer=0;
+  gravFlipped=false; gravFlipTimer=0;
+  fakeWinPhase=0; fakeWinTimer=0;
+  PLATS.forEach((p,i) => {
+    if (p.t==='crumble') crumble[i]={phase:0,timer:0,dy:0,vy:0};
+    if (p.t==='shrinking' && shrinkTimer[i]) {
+      p.w = shrinkTimer[i].origW;
+      shrinkTimer[i].shrinking = false;
+      shrinkTimer[i].timer = 0;
+    }
+  });
+  coinBombs.forEach(c => { c.collected=false; c.exploding=false; c.explodeTimer=0; });
+  
+  // After 10 deaths, randomly "forget" to reset controls
+  if (deaths > 10 && Math.random() < 0.15) {
+    ctrlFlipped = true;
+    ctrlTimer = 3000;
+  }
+}
+
+function triggerGiveUp() {
+  giveUpClicks++;
+  
+  if (giveUpClicks === 3) {
+    showMsg("You've clicked this 3 times.\nIt will NEVER work. 😂", 3000);
+  } else if (giveUpClicks === 5) {
+    showFakePopup(
+      "😤 Rage Quit Detected",
+      "Are you SURE you want to give up? This will delete your save file.",
+      "DELETE EVERYTHING",
+      "Keep Playing",
+      () => { 
+        showMsg("PSYCH! There was no save file! 😂\nBack to start!", 3500); 
+        P.spawnX=100; P.spawnY=300;
+        setTimeout(() => { respawn(); cameraX=0; }, 600);
+      },
+      () => { showMsg("Smart choice! (It wouldn't have worked anyway)", 2500); }
+    );
+    return;
+  } else if (giveUpClicks === 8) {
+    showMsg("At this point the button is just for moral support.", 3000);
+    return;
+  } else if (giveUpClicks > 10) {
+    showMsg("...", 1500);
+    return;
+  }
+  
+  showMsg(GIVE_UP_MSGS[Math.floor(Math.random()*GIVE_UP_MSGS.length)], 2500);
+  P.spawnX=100; P.spawnY=300;
+  setTimeout(() => { respawn(); cameraX=0; }, 600);
+}
+window.triggerGiveUp = triggerGiveUp;
+
+function fakeWin() {
+  if (fakeWinPhase||gameWon) return;
+  fakeWinPhase=1; fakeWinTimer=3500;
+  showMsg("🎉 YOU WIN!!! CONGRATULATIONS!!! 🎉\n\n🏆 Time: 2:34  |  Deaths: "+deaths+"\nUploading to leaderboard...", 3500);
+}
+
+function realWin() {
+  if (gameWon) return;
+  gameWon = true;
+  canvas.style.transform = 'rotate(0deg)';
+  showMsg('🏆 YOU ACTUALLY WON!\nAfter '+deaths+' death'+(deaths!==1?'s':'')+'!\nTRUE GAMER LEGEND! 🏆', 999999);
+}
+
+// ─── INPUT ────────────────────────────────────────────
+
+window.addEventListener('keydown', e => {
+  keys[e.code]=true;
+  if (['Space','ArrowUp','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.code]=false; });
+
+function getInput() {
+  const wasJ = prevKeys.Space||prevKeys.ArrowUp||prevKeys.KeyW;
+  const isJ = keys.Space||keys.ArrowUp||keys.KeyW;
+  let L = !!(keys.ArrowLeft||keys.KeyA);
+  let R = !!(keys.ArrowRight||keys.KeyD);
+  if (ctrlFlipped) { const tmp=L; L=R; R=tmp; }
+  return {L, R, jump: isJ && !wasJ};
+}
+
+// ─── UPDATE ───────────────────────────────────────────
+
+function update(dt) {
+  if (P.dead||gameWon) { updateParticles(dt); prevKeys={...keys}; return; }
+  
+  // Fake lag
+  triggerFakeLag();
+  if (fakeLagTimer > 0) {
+    fakeLagTimer -= dt;
+    prevKeys={...keys};
+    return; // literally freeze the game
+  }
+
+  // fake win freeze
+  if (fakeWinPhase===1) {
+    fakeWinTimer -= dt;
+    if (fakeWinTimer<=0) {
+      fakeWinPhase=2; fakeWinTimer=2500;
+      showMsg("😂 PSYCH! That was a FAKE exit!\nThe real one is waaay further ahead... 😈\n\nAlso your progress bar lied the whole time.", 4500);
+    }
+    updateParticles(dt);
+    prevKeys={...keys};
+    return;
+  }
+  if (fakeWinPhase===2) {
+    fakeWinTimer -= dt;
+    if (fakeWinTimer<=0) fakeWinPhase=0;
+  }
+
+  // timers
+  if (ctrlFlipped) { ctrlTimer-=dt; if (ctrlTimer<=0){ctrlFlipped=false; showMsg("Controls fixed! ...for now 😈",2000);} }
+  if (gravFlipped) { gravFlipTimer-=dt; if (gravFlipTimer<=0){gravFlipped=false;} }
+  if (msgTimer>0) { msgTimer-=dt; if (msgTimer<=0) hideMsg(); }
+  if (screenShake>0) screenShake *= 0.9;
+  if (screenShake<0.3) screenShake=0;
+
+  const inp = getInput();
+
+  // horizontal
+  if (inp.L) { P.vx-=MOVE_ACC; P.facing=-1; }
+  else if (inp.R) { P.vx+=MOVE_ACC; P.facing=1; }
+  else { P.vx *= P.onIce ? ICE_FRIC : FRIC; if (Math.abs(P.vx)<.05) P.vx=0; }
+  P.vx = Math.max(-MAX_VX, Math.min(MAX_VX, P.vx));
+
+  // Rubber banding: silently slow player down when they're doing well
+  if (deaths < 3 && P.x > 2000) {
+    P.vx *= 0.92;
+  }
+
+  // jump (with possible nerf)
+  const jumpPower = jumpNerfed ? JUMP * 0.85 : JUMP;
+  if (inp.jump && P.jumps>0) { P.vy=jumpPower; P.jumps--; P.squish=P.jumps===1?0.55:1.4; }
+
+  // gravity (with possible flip)
+  const g = gravFlipped ? -GRAV * 0.7 : GRAV;
+  P.vy += g;
+  if (P.vy>18) P.vy=18;
+  if (P.vy<-18) P.vy=-18;
+
+  // squish lerp
+  P.squish += (1-P.squish)*0.15;
+  P.blinkT += dt;
+
+  // ─── MOVE X ───
+  P.x += P.vx;
+  if (P.x<0){P.x=0;P.vx=0;}
+
+  // Invisible wall (appears after 18 deaths near a specific spot)
+  if (deaths > 18 && P.x > 3200 && P.x < 3210 && !invisWallActive) {
+    invisWallActive = true;
+    invisWallX = P.x + 5;
+  }
+  if (invisWallActive && P.x > invisWallX - P.w && P.x < invisWallX + 5) {
+    if (P.vx > 0) { P.x = invisWallX - P.w; P.vx = 0; }
+    // The wall disappears after bumping it 3 times (player must go back and forth)
+    if (inp.R) {
+      invisWallActive = false;
+      showMsg("...what was that? Must have been your imagination.", 2500);
+    }
+  }
+
+  PLATS.forEach((p,i) => {
+    if (p.t==='crumble' && crumble[i].phase===2 && crumble[i].dy>50) return;
+    if (p.t==='phantom' && !phantomState[i].visible) return;
+    const py = p.y + (p.t==='crumble' ? crumble[i].dy : 0);
+    if (!rect(P.x,P.y+2,P.w,P.h-4,p.x,py,p.w,p.h)) return;
+    if (P.vx>0) { P.x=p.x-P.w; P.vx=0; }
+    else if (P.vx<0) { P.x=p.x+p.w; P.vx=0; }
+  });
+
+  // ─── MOVE Y ───
+  const prevY = P.y;
+  P.y += P.vy;
+  P.onGround=false; P.onIce=false;
+  let landed=false;
+
+  PLATS.forEach((p,i) => {
+    if (p.t==='crumble' && crumble[i].phase===2 && crumble[i].dy>50) return;
+    if (p.t==='phantom' && !phantomState[i].visible) return;
+    const py = p.y + (p.t==='crumble' ? crumble[i].dy : 0);
+    if (!rect(P.x+2,P.y,P.w-4,P.h,p.x,py,p.w,p.h)) return;
+
+    if (P.vy>0 && prevY+P.h <= py+6) {
+      P.y=py-P.h; P.vy=0; P.onGround=true; P.jumps=2;
+      if (!landed){P.squish=0.65;landed=true;}
+      if (p.t==='icy') P.onIce=true;
+
+      // CRUMBLE
+      if (p.t==='crumble') {
+        const cs=crumble[i];
+        if (cs.phase===0){cs.phase=1;cs.timer=900;}
+      }
+      // SPRING
+      if (p.t==='spring') {
+        P.vy=-22; P.squish=1.8;
+        showMsg("WHEEEEE! 🚀 ...oh no.",1500);
+      }
+      // FAKE CHECKPOINT
+      if (p.t==='checkpt') {
+        showMsg("★ CHECKPOINT SAVED! ★\n(jk lol back to start 👋)",3500);
+        P.spawnX=100; P.spawnY=300;
+        setTimeout(()=>die(),150);
+      }
+      // CONTROLS FLIP
+      if (p.t==='flipctrl' && !ctrlFlipped) {
+        ctrlFlipped=true; ctrlTimer=7000;
+        showMsg("⚡ SPEED BOOST ACTIVATED!\n(your controls are inverted for 7s btw 🙃)",3500);
+      }
+      // GRAVITY FLIP
+      if (p.t==='gravflip' && !gravFlipped) {
+        gravFlipped=true; gravFlipTimer=4000;
+        P.vy=-15;
+        showMsg("🌀 GRAVITY BOOST!\n(you're floating now, good luck landing 😈)",3000);
+      }
+      // SHRINKING PLATFORM
+      if (p.t==='shrinking') {
+        const st = shrinkTimer[i];
+        if (!st.shrinking) {
+          st.shrinking = true;
+          st.timer = 2000;
+        }
+      }
+      // PHANTOM - disappears when you stand on it
+      if (p.t==='phantom') {
+        phantomState[i].timer = 400; // disappear in 400ms
+      }
+    } else if (P.vy<0 && prevY>=py+p.h-6) {
+      P.y=py+p.h; P.vy=0;
+    }
+  });
+
+  // Coin bomb collision
+  coinBombs.forEach(c => {
+    if (c.collected || c.exploding) return;
+    if (rect(P.x,P.y,P.w,P.h,c.x-12,c.y-12,24,24)) {
+      c.collected = true;
+      c.exploding = true;
+      c.explodeTimer = 800;
+      showMsg("💰 +1 Coin!\n...wait, why is it ticking?", 1200);
+    }
+  });
+  
+  // Coin bomb explosions
+  coinBombs.forEach(c => {
+    if (!c.exploding) return;
+    c.explodeTimer -= dt;
+    if (c.explodeTimer <= 0) {
+      c.exploding = false;
+      spawnParticles(c.x, c.y, 40, 0, 60);
+      if (rect(P.x,P.y,P.w,P.h,c.x-60,c.y-60,120,120)) {
+        showMsg("💣 BOOM! Those were bombs, not coins.\nThe sign DID say 'definitely not bombs'... 💀", 3500);
+        die();
+      }
+    }
+  });
+
+  // door collision
+  DOORS.forEach(d => {
+    if (rect(P.x,P.y,P.w,P.h,d.x,d.y,d.w,d.h)) {
+      if (d.type==='fake') fakeWin(); else realWin();
+    }
+  });
+
+  // spike collision
+  const SH=22;
+  SPIKES.forEach(sp => {
+    const sy = sp.dir==='up' ? sp.y-SH : sp.y;
+    if (rect(P.x+4,P.y+4,P.w-8,P.h-8,sp.x,sy,sp.w,SH)) die();
+  });
+
+  // crumble physics
+  PLATS.forEach((p,i) => {
+    if (p.t!=='crumble') return;
+    const cs=crumble[i];
+    if (cs.phase===1){cs.timer-=dt;if(cs.timer<=0){cs.phase=2;cs.vy=0;}}
+    if (cs.phase===2){cs.vy+=0.8;cs.dy+=cs.vy;}
+  });
+
+  // moving platforms
+  PLATS.forEach(p => {
+    if (p.t!=='moving') return;
+    const dx=(P.x+P.w/2)-(p.x+p.w/2);
+    const dy=P.y+P.h-p.y;
+    const above=dy>-10&&dy<90&&P.vy>=0;
+    const speed=(p.dodge&&above&&Math.abs(dx)<55)?p.spd*3.5:p.spd;
+    p.x+=speed*p._dir;
+    if(p.x>p._startX+p.range){p.x=p._startX+p.range;p._dir=-1;}
+    if(p.x<p._startX-p.range){p.x=p._startX-p.range;p._dir=1;}
+  });
+
+  // Phantom platform timer
+  PLATS.forEach((p,i) => {
+    if (p.t !== 'phantom') return;
+    const ps = phantomState[i];
+    ps.timer -= dt;
+    if (ps.timer <= 0) {
+      ps.visible = !ps.visible;
+      ps.timer = ps.visible ? (1500 + Math.random()*1500) : (800 + Math.random()*1200);
+    }
+  });
+
+  // Shrinking platforms
+  PLATS.forEach((p,i) => {
+    if (p.t !== 'shrinking') return;
+    const st = shrinkTimer[i];
+    if (st.shrinking) {
+      st.timer -= dt;
+      const progress = 1 - (st.timer / 2000);
+      p.w = st.origW * Math.max(0.1, 1 - progress);
+      if (st.timer <= 0) {
+        p.w = 0;
+      }
+    }
+  });
+
+  // Ghost trail updates
+  for (let i=ghostTrails.length-1;i>=0;i--) {
+    const g = ghostTrails[i];
+    g.vy += 0.5;
+    g.x += g.vx;
+    g.y += g.vy;
+    g.life -= dt/1000;
+    if (g.life<=0 || g.y > CH+50) ghostTrails.splice(i,1);
+  }
+
+  // particles
+  updateParticles(dt);
+
+  // camera
+  const target=P.x-CW*0.33;
+  cameraX+=(target-cameraX)*0.1;
+  if(cameraX<0)cameraX=0;
+
+  // fall off world
+  if (P.y>CH+80) die();
+  if (gravFlipped && P.y < -80) die();
+
+  // progress lies
+  updateProgress();
+
+  prevKeys={...keys};
+}
+
+function updateParticles(dt) {
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.25; p.life-=dt/800;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+// ─── DRAW ─────────────────────────────────────────────
+
+let stars=null;
+function drawBG(){
+  const g=ctx.createLinearGradient(0,0,0,CH);
+  g.addColorStop(0,'#0a0a1e');g.addColorStop(.7,'#150a2e');g.addColorStop(1,'#1e0a0a');
+  ctx.fillStyle=g;ctx.fillRect(0,0,CW,CH);
+  if(!stars)stars=Array.from({length:100},()=>({x:Math.random()*CW,y:Math.random()*CH*.7,s:Math.random()*1.5+.3,t:Math.random()*6.28}));
+  stars.forEach(s=>{s.t+=.012;ctx.globalAlpha=.3+Math.sin(s.t)*.25;ctx.fillStyle='#fff';ctx.fillRect(s.x,s.y,s.s,s.s);});
+  ctx.globalAlpha=1;
+}
+
+function drawLava(){
+  const ly=CH-25, t=Date.now()*.001;
+  ctx.fillStyle='#7f1d1d';ctx.fillRect(0,ly,CW,25);
+  ctx.fillStyle='#dc2626';ctx.fillRect(0,ly+3,CW,8);
+  for(let x=0;x<CW;x+=28){
+    const b=Math.sin(t*1.5+(x+cameraX)*.12)*3;
+    ctx.fillStyle='#f87171';
+    ctx.beginPath();ctx.arc(x,ly+b+5,4,0,6.28);ctx.fill();
+  }
+}
+
+function drawPlatforms(){
+  PLATS.forEach((p,i)=>{
+    if (p.t==='phantom' && !phantomState[i].visible) {
+      // Draw ghost outline to taunt
+      const sx=p.x-cameraX;
+      if(sx+p.w<-5||sx>CW+5) return;
+      ctx.strokeStyle='rgba(168,85,247,0.15)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.strokeRect(sx,p.y,p.w,p.h);
+      ctx.setLineDash([]);
+      return;
+    }
+    
+    let py=p.y+(p.t==='crumble'?crumble[i].dy:0);
+    const sx=p.x-cameraX;
+    if(sx+p.w<-5||sx>CW+5) return;
+    if(p.t==='crumble'&&crumble[i].dy>CH) return;
+    if(p.t==='shrinking'&&p.w<=0) return;
+
+    ctx.save();
+    // shake
+    if(p.t==='crumble'&&crumble[i].phase===1){
+      const amt=(1-crumble[i].timer/900)*5;
+      ctx.translate(Math.sin(Date.now()*.04)*amt,0);
+    }
+    // phantom flicker
+    if(p.t==='phantom'){
+      const ps = phantomState[i];
+      if (ps.timer < 500) {
+        ctx.globalAlpha = 0.3 + Math.sin(Date.now()*0.02) * 0.3;
+      }
+    }
+
+    let bc,tc;
+    switch(p.t){
+      case'solid':bc='#374151';tc='#6b7280';break;
+      case'crumble':
+        if(crumble[i].phase>=1){bc='#78350f';tc='#d97706';}
+        else{bc='#14532d';tc='#22c55e';}break;
+      case'spring':bc='#78350f';tc='#f59e0b';break;
+      case'checkpt':bc='#713f12';tc='#eab308';break;
+      case'icy':bc='#1e3a8a';tc='#93c5fd';break;
+      case'moving':bc='#4c1d95';tc='#a78bfa';break;
+      case'flipctrl':bc='#064e3b';tc='#34d399';break;
+      case'gravflip':bc='#581c87';tc='#c084fc';break;
+      case'phantom':bc='#4c1d95';tc='#a78bfa';break;
+      case'shrinking':bc='#831843';tc='#f472b6';break;
+      default:bc='#374151';tc='#6b7280';
+    }
+    ctx.fillStyle=bc;ctx.fillRect(sx,py+5,p.w,p.h-5);
+    ctx.fillStyle=tc;ctx.fillRect(sx,py,p.w,7);
+
+    // ice shimmer
+    if(p.t==='icy'){ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(sx+4,py+1,p.w*.5,3);}
+    // spring coils
+    if(p.t==='spring'){ctx.fillStyle='#fbbf24';for(let x2=sx+8;x2<sx+p.w-12;x2+=14)ctx.fillRect(x2,py-8,8,8);}
+    // checkpoint glow
+    if(p.t==='checkpt'){
+      const glow=.3+Math.sin(Date.now()*.004)*.2;
+      ctx.fillStyle=`rgba(234,179,8,${glow})`;
+      ctx.fillRect(sx-3,py-3,p.w+6,p.h+6);
+    }
+    // gravity flip aura
+    if(p.t==='gravflip'){
+      const glow=.3+Math.sin(Date.now()*.006)*.2;
+      ctx.fillStyle=`rgba(192,132,252,${glow})`;
+      ctx.fillRect(sx-4,py-4,p.w+8,p.h+8);
+    }
+    // shrinking warning
+    if(p.t==='shrinking'&&shrinkTimer[i]&&shrinkTimer[i].shrinking){
+      ctx.fillStyle='rgba(244,114,182,'+(0.3+Math.sin(Date.now()*0.01)*0.2)+')';
+      ctx.fillRect(sx-2,py-2,p.w+4,p.h+4);
+    }
+    // crumble cracks
+    if(p.t==='crumble'&&crumble[i].phase===1){
+      const prog=1-crumble[i].timer/900;
+      ctx.strokeStyle='#1c1917';ctx.lineWidth=1.5;
+      for(let c=0;c<Math.floor(prog*5)+1;c++){
+        const cx2=sx+(p.w/6)*(c+1);
+        ctx.beginPath();ctx.moveTo(cx2,py);ctx.lineTo(cx2+(c%2?3:-3),py+p.h);ctx.stroke();
+      }
+    }
+    // label
+    if(p.label){
+      ctx.fillStyle='rgba(0,0,0,.75)';ctx.font='bold 9px Courier New';
+      const tw=ctx.measureText(p.label).width;
+      ctx.fillRect(sx+p.w/2-tw/2-3,py-16,tw+6,14);
+      ctx.fillStyle='#fff';ctx.textAlign='center';
+      ctx.fillText(p.label,sx+p.w/2,py-5);ctx.textAlign='left';
+    }
+    ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+function drawCoinBombs() {
+  const t = Date.now()*0.003;
+  coinBombs.forEach(c => {
+    if (c.collected && !c.exploding) return;
+    const sx = c.x - cameraX;
+    if (sx < -20 || sx > CW+20) return;
+    
+    if (c.exploding) {
+      // Ticking animation
+      const flash = Math.sin(Date.now()*0.03) > 0;
+      ctx.fillStyle = flash ? '#ff0000' : '#ff6600';
+      ctx.beginPath();ctx.arc(sx,c.y,14,0,6.28);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 14px Courier New';ctx.textAlign='center';
+      ctx.fillText('💣',sx,c.y+5);ctx.textAlign='left';
+      return;
+    }
+    
+    // Draw as shiny coin
+    const bob = Math.sin(t+c.x*0.01)*4;
+    ctx.fillStyle='#fbbf24';
+    ctx.beginPath();ctx.arc(sx,c.y+bob,10,0,6.28);ctx.fill();
+    ctx.fillStyle='#f59e0b';
+    ctx.beginPath();ctx.arc(sx,c.y+bob,7,0,6.28);ctx.fill();
+    ctx.fillStyle='#fef3c7';
+    ctx.font='bold 11px Courier New';ctx.textAlign='center';
+    ctx.fillText('$',sx,c.y+bob+4);ctx.textAlign='left';
+    
+    // Sparkle
+    const spark = Math.sin(t*2+c.x)*0.5+0.5;
+    ctx.globalAlpha=spark*0.6;
+    ctx.fillStyle='#fff';
+    ctx.fillRect(sx-1,c.y+bob-12,2,4);
+    ctx.fillRect(sx+6,c.y+bob-4,4,2);
+    ctx.globalAlpha=1;
+  });
+}
+
+function drawDoors(){
+  DOORS.forEach(d=>{
+    const sx=d.x-cameraX;
+    if(sx+d.w<-10||sx>CW+10)return;
+    const isR=d.type==='real';
+    ctx.fillStyle=isR?'#16a34a':'#dc2626';
+    ctx.fillRect(sx,d.y,d.w,d.h);
+    ctx.fillStyle=isR?'#22c55e':'#ef4444';
+    ctx.fillRect(sx+4,d.y+3,d.w-8,d.h-3);
+    ctx.fillStyle=isR?'#14532d':'#7f1d1d';
+    ctx.fillRect(sx+8,d.y+12,d.w-20,d.h*.5);
+    ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(sx+d.w-12,d.y+d.h*.55,4,0,6.28);ctx.fill();
+
+    const gl=.5+Math.sin(Date.now()*.005)*.3;
+    ctx.shadowColor=isR?'#22c55e':'#ef4444';ctx.shadowBlur=15*gl;
+
+    ctx.font='bold 12px Courier New';ctx.textAlign='center';
+    ctx.fillStyle=isR?'#4ade80':'#fca5a5';
+    ctx.fillText(isR?'🏆 EXIT':'🚪 EXIT',sx+d.w/2,d.y-8);
+    if(!isR){ctx.font='9px Courier New';ctx.fillStyle='#fbbf24';ctx.fillText('(definitely real)',sx+d.w/2,d.y-20);}
+    ctx.shadowBlur=0;ctx.textAlign='left';
+  });
+}
+
+function drawSpikes(){
+  const SH=22;
+  SPIKES.forEach(sp=>{
+    const sx=sp.x-cameraX;
+    if(sx+sp.w<-10||sx>CW+10)return;
+    const count=Math.floor(sp.w/16);
+    for(let k=0;k<count;k++){
+      const bx=sx+k*16;
+      ctx.fillStyle='#9ca3af';ctx.beginPath();
+      if(sp.dir==='up'){ctx.moveTo(bx,sp.y);ctx.lineTo(bx+8,sp.y-SH);ctx.lineTo(bx+16,sp.y);}
+      else{ctx.moveTo(bx,sp.y);ctx.lineTo(bx+8,sp.y+SH);ctx.lineTo(bx+16,sp.y);}
+      ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#d1d5db';ctx.lineWidth=1;ctx.beginPath();
+      if(sp.dir==='up'){ctx.moveTo(bx+1,sp.y-1);ctx.lineTo(bx+8,sp.y-SH+2);}
+      else{ctx.moveTo(bx+1,sp.y+1);ctx.lineTo(bx+8,sp.y+SH-2);}
+      ctx.stroke();
+    }
+  });
+}
+
+function drawSigns(){
+  SIGNS.forEach(s=>{
+    const sx=s.x-cameraX;
+    if(sx>CW+10||sx+200<-10)return;
+    const lh=14,pad=6;
+    const maxL=Math.max(...s.lines.map(l=>l.length));
+    const bw=maxL*6.5+pad*2, bh=s.lines.length*lh+pad*2;
+    ctx.fillStyle='#92400e';ctx.fillRect(sx+bw/2-2,s.y+bh,4,25);
+    ctx.fillStyle='#fef9c3';ctx.fillRect(sx,s.y,bw,bh);
+    ctx.strokeStyle='#a16207';ctx.lineWidth=2;ctx.strokeRect(sx,s.y,bw,bh);
+    ctx.fillStyle='#1a1a00';ctx.font='10px Courier New';
+    s.lines.forEach((l,j)=>ctx.fillText(l,sx+pad,s.y+pad+10+j*lh));
+  });
+}
+
+function drawGhosts() {
+  ghostTrails.forEach(g => {
+    ctx.globalAlpha = g.alpha * Math.max(0, g.life);
+    ctx.fillStyle = '#ff4444';
+    const sx = g.x - cameraX;
+    // Draw ghost player shape
+    ctx.fillRect(sx, g.y, 26, 34);
+    ctx.fillStyle='#fff';
+    ctx.font='8px Courier New';
+    ctx.textAlign='center';
+    ctx.fillText('RIP', sx+13, g.y+20);
+    ctx.textAlign='left';
+  });
+  ctx.globalAlpha = 1;
+}
+
+function drawParticles(){
+  particles.forEach(p=>{
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=`hsl(${p.hue},100%,55%)`;
+    ctx.fillRect(p.x-cameraX,p.y,p.size,p.size);
+  });ctx.globalAlpha=1;
+}
+
+function drawPlayer(){
+  if(P.dead)return;
+  const px=P.x-cameraX, py=P.y, pw=P.w, ph=P.h, sq=P.squish;
+  ctx.save();
+  ctx.translate(px+pw/2, py+ph);
+  ctx.scale(1/sq+(1-sq)*.3, sq);
+  ctx.translate(-pw/2,-ph);
+
+  // body
+  const g=ctx.createLinearGradient(0,0,0,ph);
+  g.addColorStop(0,'#4ade80');g.addColorStop(1,'#15803d');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.roundRect(0,0,pw,ph,4);ctx.fill();
+
+  // eye
+  const ey=ph*.3, ex=P.facing>0?pw*.55:pw*.22;
+  ctx.fillStyle='#fff';ctx.fillRect(ex-4,ey-4,9,9);
+  const blink=Math.sin(P.blinkT*.003)>.93;
+  if(!blink){
+    ctx.fillStyle='#111';ctx.fillRect(ex-2,ey-2,5,5);
+    ctx.fillStyle='#fff';ctx.fillRect(ex,ey-1,2,2);
+  }else{ctx.fillStyle='#333';ctx.fillRect(ex-4,ey,9,2);}
+
+  // mouth - gets sadder with deaths
+  ctx.strokeStyle='#222';ctx.lineWidth=1.5;ctx.beginPath();
+  if(deaths<3){ctx.arc(pw*.5,ph*.58,4,.1,Math.PI-.1,true);}
+  else if(deaths<8){ctx.moveTo(pw*.35,ph*.62);ctx.lineTo(pw*.65,ph*.62);}
+  else if(deaths<15){ctx.arc(pw*.5,ph*.72,4,Math.PI+.2,-.2);}
+  else if(deaths<25){
+    // crying
+    ctx.arc(pw*.5,ph*.72,5,Math.PI+.2,-.2);
+    ctx.stroke();
+    ctx.fillStyle='#60a5fa';
+    ctx.fillRect(ex+5,ey+10,2,6+Math.sin(Date.now()*0.005)*2);
+    ctx.beginPath();
+  }
+  else{
+    // dead inside
+    ctx.moveTo(pw*.3,ph*.7);ctx.lineTo(pw*.7,ph*.7);
+    ctx.stroke();
+    ctx.fillStyle='#60a5fa';
+    ctx.fillRect(ex+5,ey+8,2,10);
+    ctx.fillRect(ex-8,ey+8,2,8);
+    // X eyes
+    ctx.strokeStyle='#ff0000';ctx.lineWidth=1;
+    ctx.beginPath();
+  }
+  ctx.stroke();
+
+  // Sweat drops when near danger
+  if (deaths > 5) {
+    const nearSpike = SPIKES.some(sp => Math.abs((P.x+P.w/2)-sp.x-sp.w/2) < 100);
+    if (nearSpike) {
+      ctx.fillStyle='#60a5fa';
+      const sd = Math.sin(Date.now()*0.008)*3;
+      ctx.fillRect(pw-2,4+sd,3,5);
+    }
+  }
+
+  ctx.restore();
+
+  // ctrl flip indicator
+  if(ctrlFlipped){
+    ctx.fillStyle='#f97316';ctx.font='bold 11px Courier New';ctx.textAlign='center';
+    ctx.fillText('⚡'+Math.ceil(ctrlTimer/1000)+'s',px+pw/2,py-6);ctx.textAlign='left';
+  }
+  // grav flip indicator
+  if(gravFlipped){
+    ctx.fillStyle='#c084fc';ctx.font='bold 11px Courier New';ctx.textAlign='center';
+    ctx.fillText('🌀'+Math.ceil(gravFlipTimer/1000)+'s',px+pw/2,py-18);ctx.textAlign='left';
+  }
+}
+
+function drawHUD(){
+  if(ctrlFlipped){
+    ctx.fillStyle='rgba(251,146,60,.08)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#fb923c';ctx.font='bold 13px Courier New';
+    ctx.fillText('⚡ CONTROLS INVERTED: '+Math.ceil(ctrlTimer/1000)+'s',10,CH-12);
+  }
+  if(gravFlipped){
+    ctx.fillStyle='rgba(192,132,252,.06)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#c084fc';ctx.font='bold 13px Courier New';
+    ctx.fillText('🌀 GRAVITY FLIPPED: '+Math.ceil(gravFlipTimer/1000)+'s',10,CH-28);
+  }
+  
+  // Fake lag indicator
+  if(fakeLagTimer > 0) {
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#ff3366';ctx.font='bold 16px Courier New';ctx.textAlign='center';
+    ctx.fillText('⚠️ CONNECTION ISSUES... PLEASE WAIT ⚠️',CW/2,CH/2);
+    ctx.fillStyle='#888';ctx.font='11px Courier New';
+    ctx.fillText('(this is totally real lag and not programmed at all)',CW/2,CH/2+25);
+    ctx.textAlign='left';
+  }
+  
+  if(fakeWinPhase===1){
+    ctx.fillStyle='rgba(34,197,94,.2)';ctx.fillRect(0,0,CW,CH);
+    const t=Date.now();
+    for(let i=0;i<60;i++){
+      ctx.fillStyle=`hsl(${(i*47+t*.05)%360},90%,65%)`;
+      ctx.fillRect((i*137+t*.03)%CW,(i*89+t*.04)%CH,7,7);
+    }
+    ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(CW/2-260,CH/2-65,520,130);
+    ctx.strokeStyle='#fbbf24';ctx.lineWidth=3;ctx.strokeRect(CW/2-260,CH/2-65,520,130);
+    ctx.fillStyle='#fbbf24';ctx.font='bold 38px Courier New';ctx.textAlign='center';
+    ctx.fillText('🎉 YOU WIN! 🎉',CW/2,CH/2-15);
+    ctx.fillStyle='#4ade80';ctx.font='16px Courier New';
+    ctx.fillText('Uploading score to leaderboard...',CW/2,CH/2+15);
+    ctx.fillStyle='#888';ctx.font='12px Courier New';
+    ctx.fillText('Deaths: '+deaths+' | Rating: S+++ | Top 0.01%',CW/2,CH/2+40);
+    ctx.textAlign='left';
+  }
+  if(gameWon){
+    ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(0,0,CW,CH);
+    ctx.textAlign='center';
+    ctx.fillStyle='#fbbf24';ctx.font='bold 44px Courier New';
+    ctx.fillText('🏆 YOU ACTUALLY WON! 🏆',CW/2,CH/2-40);
+    ctx.fillStyle='#fff';ctx.font='24px Courier New';
+    ctx.fillText('Deaths: '+deaths,CW/2,CH/2+10);
+    const rating=deaths===0?'IMPOSSIBLE. You cheated.':deaths<5?'LEGENDARY':deaths<10?'Pretty Good!':deaths<15?'Average':deaths<20?'Below Average':deaths<30?'Certified Rage Monster':'You need therapy.';
+    ctx.fillStyle='#a78bfa';ctx.font='18px Courier New';
+    ctx.fillText('Rating: '+rating,CW/2,CH/2+45);
+    ctx.fillStyle='#666';ctx.font='14px Courier New';
+    ctx.fillText('Refresh to play again (why would you though?)',CW/2,CH/2+80);
+    ctx.textAlign='left';
+  }
+  
+  // Death streak counter
+  if (deaths >= 10) {
+    ctx.fillStyle='rgba(255,0,0,0.05)';
+    const intensity = Math.min(0.15, (deaths-10)*0.01);
+    ctx.fillStyle=`rgba(255,0,0,${intensity})`;
+    ctx.fillRect(0,0,CW,CH);
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,CW,CH);
+  
+  ctx.save();
+  // Screen shake
+  if (screenShake > 0.5) {
+    ctx.translate(
+      (Math.random()-0.5)*screenShake*2,
+      (Math.random()-0.5)*screenShake*2
+    );
+  }
+  
+  drawBG();
+  drawLava();
+  drawSigns();
+  drawPlatforms();
+  drawSpikes();
+  drawCoinBombs();
+  drawDoors();
+  drawGhosts();
+  drawParticles();
+  drawPlayer();
+  drawHUD();
+  
+  ctx.restore();
+}
+
+// ─── LOOP ─────────────────────────────────────────────
+
+let lastT=0;
+function loop(t){
+  const dt=Math.min(t-lastT,50);lastT=t;
+  update(dt);draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ─── POPUP AD SYSTEM FROM HELL ────────────────────────
+
+const AD_TEMPLATES = [
+  {title:"🔥 HOT SINGLES IN YOUR AREA",body:"want to watch you fail at this game",color:"#ff3366",cta:"MEET THEM NOW",ctaColor:"#ff3366"},
+  {title:"⚠️ YOUR PC HAS 847 VIRUSES",body:"(mostly from playing this game)",color:"#ff6600",cta:"SCAN NOW",ctaColor:"#ff6600"},
+  {title:"🎰 CONGRATULATIONS!!!",body:"You are the 1,000,000th visitor! Click to claim your prize!",color:"#fbbf24",cta:"CLAIM $1,000,000",ctaColor:"#fbbf24"},
+  {title:"💪 GET GOOD AT GAMES",body:"With this ONE WEIRD TRICK! (it's called not playing this one)",color:"#22c55e",cta:"LEARN MORE",ctaColor:"#22c55e"},
+  {title:"🧠 INCREASE YOUR IQ BY 300%",body:"You clearly need it based on your death count",color:"#a78bfa",cta:"GET SMARTER",ctaColor:"#a78bfa"},
+  {title:"📱 DOWNLOAD RAM",body:"Your brain needs more RAM to play this game",color:"#38bdf8",cta:"DOWNLOAD 64GB FREE",ctaColor:"#38bdf8"},
+  {title:"🎮 PRO GAMER CHAIR SALE",body:"Won't help you but at least you'll be comfortable while losing",color:"#f97316",cta:"BUY NOW $9999",ctaColor:"#f97316"},
+  {title:"💊 RAGE PILLS™",body:"Clinically proven to reduce deaths by 0%",color:"#ef4444",cta:"ORDER NOW",ctaColor:"#ef4444"},
+  {title:"🏆 SKILL ISSUE DETECTED",body:"Our AI analyzed your gameplay. Diagnosis: hopeless",color:"#dc2626",cta:"GET COACHING $299/hr",ctaColor:"#dc2626"},
+  {title:"🐒 A MONKEY PLAYED THIS",body:"It beat the game in 2 tries. Just saying.",color:"#a3e635",cta:"WATCH VIDEO",ctaColor:"#a3e635"},
+  {title:"📊 SURVEY: ARE YOU OK?",body:"Based on your gameplay, we're genuinely concerned",color:"#c084fc",cta:"TAKE SURVEY",ctaColor:"#c084fc"},
+  {title:"🔊 TURN UP YOUR VOLUME",body:"To hear the sound of your own failure",color:"#fb923c",cta:"MAX VOLUME",ctaColor:"#fb923c"},
+  {title:"🍕 ORDER COMFORT FOOD",body:"You deserve pizza after this many deaths",color:"#f87171",cta:"ORDER PIZZA",ctaColor:"#f87171"},
+  {title:"✈️ CHEAP FLIGHTS AWAY",body:"From this game. One way only.",color:"#60a5fa",cta:"ESCAPE NOW",ctaColor:"#60a5fa"},
+  {title:"🎓 GAMING SCHOOL ENROLLMENT",body:"4 year degree. You need all 4 years.",color:"#4ade80",cta:"ENROLL TODAY",ctaColor:"#4ade80"},
+  {title:"⏰ TIME WASTED COUNTER",body:"You've been here way too long already",color:"#f472b6",cta:"WASTE MORE TIME",ctaColor:"#f472b6"},
+  {title:"🐢 YOU'RE SLOWER THAN A TURTLE",body:"Actual data from our servers",color:"#34d399",cta:"SPEED BOOST $49.99",ctaColor:"#34d399"},
+  {title:"💀 GAME OVER INSURANCE",body:"Covers up to 999 deaths. You'll need it.",color:"#f43f5e",cta:"GET INSURED",ctaColor:"#f43f5e"},
+];
+
+let adCount = 0;
+let adInterval = null;
+let adEscalation = 0; // gets worse over time
+let totalAdsShown = 0;
+let adsOnScreen = 0;
+const MAX_ADS_ON_SCREEN = 25;
+const activeAds = new Set();
+
+function getRandomAdDelay() {
+  // Starts at 2-4 seconds, rapidly drops to 0.5-1s
+  const base = Math.max(400, 2000 - adEscalation * 150);
+  const range = Math.max(200, 2000 - adEscalation * 200);
+  return base + Math.random() * range;
+}
+
+function spawnPopupAd() {
+  if (adsOnScreen >= MAX_ADS_ON_SCREEN) return;
+  
+  totalAdsShown++;
+  adEscalation = Math.floor(totalAdsShown / 2); // escalates every 2 ads
+  adsOnScreen++;
+  adCount++;
+  
+  const tmpl = AD_TEMPLATES[Math.floor(Math.random() * AD_TEMPLATES.length)];
+  const adId = 'popup-ad-' + adCount;
+  
+  // Size gets bigger over time
+  const baseW = 200 + Math.min(180, adEscalation * 15);
+  const baseH = 120 + Math.min(100, adEscalation * 8);
+  
+  // Random position but biased toward center as escalation increases
+  const centerBias = Math.min(0.7, adEscalation * 0.06);
+  const maxX = window.innerWidth - baseW - 10;
+  const maxY = window.innerHeight - baseH - 10;
+  const randX = 10 + Math.random() * maxX;
+  const randY = 10 + Math.random() * maxY;
+  const cx = window.innerWidth/2 - baseW/2;
+  const cy = window.innerHeight/2 - baseH/2;
+  const posX = randX + (cx - randX) * centerBias;
+  const posY = randY + (cy - randY) * centerBias;
+  
+  // Close button gets progressively more evil
+  let closeHTML = '';
+  const evilLevel = Math.min(6, Math.floor(totalAdsShown / 4));
+  
+  if (evilLevel === 0) {
+    closeHTML = `<span class="ad-close" onclick="closePopupAd('${adId}')">✕</span>`;
+  } else if (evilLevel === 1) {
+    // Tiny close button
+    closeHTML = `<span class="ad-close tiny-close" onclick="closePopupAd('${adId}')" title="Close">.</span>`;
+  } else if (evilLevel === 2) {
+    // Close button that runs away on hover
+    closeHTML = `<span class="ad-close moving-close" id="close-${adId}" onmouseenter="moveCloseBtn('close-${adId}')" onclick="closePopupAd('${adId}')">✕</span>`;
+  } else if (evilLevel === 3) {
+    // Multiple fake X buttons, only one works
+    const fakeCount = 2 + Math.floor(Math.random()*3);
+    closeHTML = '';
+    const realPos = Math.floor(Math.random()*(fakeCount+1));
+    for (let i = 0; i <= fakeCount; i++) {
+      if (i === realPos) {
+        closeHTML += `<span class="ad-close" onclick="closePopupAd('${adId}')" style="font-size:9px;margin-left:2px">✕</span>`;
+      } else {
+        closeHTML += `<span class="fake-x" onclick="fakeCloseAd('${adId}')" style="font-size:9px;margin-left:2px">✕</span>`;
+      }
+    }
+  } else if (evilLevel === 4) {
+    // Close "button" is actually text that says "close" in nearly invisible color
+    closeHTML = `<span class="ad-close" onclick="closePopupAd('${adId}')" style="font-size:6px;color:#151515;letter-spacing:-1px">close</span>`;
+  } else if (evilLevel === 5) {
+    // No close button. Must wait for timer.
+    closeHTML = `<span style="font-size:7px;color:#333" id="timer-${adId}">Ad closes in <b>10</b>s</span>`;
+    setTimeout(() => {
+      const el = document.getElementById(adId);
+      if (el) {
+        const timerEl = document.getElementById('timer-' + adId);
+        let t = 10;
+        const iv = setInterval(() => {
+          t--;
+          if (timerEl) timerEl.innerHTML = 'Ad closes in <b>' + Math.max(0,t) + '</b>s';
+          if (t <= 0) { clearInterval(iv); closePopupAd(adId); }
+          // At 1 second, reset back to 5 (lol)
+          if (t === 1 && Math.random() < 0.5) { t = 6; if(timerEl) timerEl.innerHTML = 'Just kidding! <b>5</b>s more'; }
+        }, 1000);
+      }
+    }, 100);
+  } else {
+    // Close button spawns 2 more ads
+    closeHTML = `<span class="ad-close" onclick="closePopupAd('${adId}');spawnPopupAd();spawnPopupAd()">✕</span>`;
+  }
+  
+  // Occasionally add a fake loading bar
+  const hasProgress = Math.random() < 0.3;
+  const progressHTML = hasProgress ? `<div class="fake-progress"><span style="background:${tmpl.color}"></span></div>` : '';
+  
+  // Sometimes the CTA button "closes" the ad but spawns more
+  const ctaAction = totalAdsShown > 8
+    ? `onclick="closePopupAd('${adId}');spawnPopupAd();spawnPopupAd();showMsg('Thanks for clicking! Here are more ads! 😈',2000)"`
+    : `onclick="closePopupAd('${adId}');showMsg('${["Nice click! That was fake btw.","Error: product not found.","Payment of $0.00 processed!","Subscription started! (jk)","Download starting... (not really)"][Math.floor(Math.random()*5)]}',2000)"`;
+
+  const ad = document.createElement('div');
+  ad.className = 'popup-ad';
+  ad.id = adId;
+  ad.style.cssText = `left:${posX}px;top:${posY}px;width:${baseW}px;border-color:${tmpl.color}`;
+  ad.innerHTML = `
+    <div class="ad-header">
+      <span style="opacity:.5">AD • Sponsored</span>
+      ${closeHTML}
+    </div>
+    <div class="ad-body">
+      <div class="ad-title" style="color:${tmpl.color}">${tmpl.title}</div>
+      <div>${tmpl.body}</div>
+      <button class="ad-cta" style="background:${tmpl.ctaColor}" ${ctaAction}>${tmpl.cta}</button>
+      ${progressHTML}
+    </div>
+  `;
+  
+  document.getElementById('ad-container').appendChild(ad);
+  activeAds.add(adId);
+  
+  // Make ad draggable (but glitchy)
+  let isDragging = false, dragOffX = 0, dragOffY = 0;
+  ad.querySelector('.ad-header').addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('ad-close') || e.target.classList.contains('fake-x')) return;
+    isDragging = true;
+    dragOffX = e.clientX - ad.offsetLeft;
+    dragOffY = e.clientY - ad.offsetTop;
+  });
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    let nx = e.clientX - dragOffX;
+    let ny = e.clientY - dragOffY;
+    // After escalation, dragging is "slippery" - ad drifts
+    if (adEscalation > 2) {
+      nx += (Math.random() - 0.5) * 20;
+      ny += (Math.random() - 0.5) * 20;
+    }
+    ad.style.left = nx + 'px';
+    ad.style.top = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => { isDragging = false; });
+  
+  // Some ads slowly drift toward the center
+  if (totalAdsShown > 6 && Math.random() < 0.4) {
+    const driftInterval = setInterval(() => {
+      if (!document.getElementById(adId)) { clearInterval(driftInterval); return; }
+      const rect = ad.getBoundingClientRect();
+      const dx = (window.innerWidth/2 - rect.left - rect.width/2) * 0.005;
+      const dy = (window.innerHeight/2 - rect.top - rect.height/2) * 0.005;
+      ad.style.left = (parseFloat(ad.style.left) + dx) + 'px';
+      ad.style.top = (parseFloat(ad.style.top) + dy) + 'px';
+    }, 50);
+  }
+  
+  // Schedule next ad
+  scheduleNextAd();
+}
+
+function closePopupAd(adId) {
+  const el = document.getElementById(adId);
+  if (el) {
+    // Chance the ad "resists" closing - very high chance
+    if (adEscalation > 1 && Math.random() < 0.4) {
+      el.style.animation = 'none';
+      el.offsetHeight; // reflow
+      el.style.animation = 'adSlam .3s ease-out';
+      showMsg("This ad doesn't want to close. Try again!", 1500);
+      return;
+    }
+    el.style.transition = 'opacity .2s, transform .2s';
+    el.style.opacity = '0';
+    el.style.transform = 'scale(0.8)';
+    setTimeout(() => { el.remove(); }, 200);
+    activeAds.delete(adId);
+    adsOnScreen = Math.max(0, adsOnScreen - 1);
+  }
+}
+window.closePopupAd = closePopupAd;
+
+function fakeCloseAd(adId) {
+  showMsg(["Wrong X! Try another one 😂","That's a decorative X!","Nope, not that one!","Almost! But no.","The real X is hiding 🙈"][Math.floor(Math.random()*5)], 1500);
+  // Spawn another ad as punishment
+  if (Math.random() < 0.5) spawnPopupAd();
+}
+window.fakeCloseAd = fakeCloseAd;
+
+function moveCloseBtn(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const margin = Math.floor(Math.random()*40) - 20;
+  btn.style.marginLeft = margin + 'px';
+  btn.style.marginTop = Math.floor(Math.random()*20) - 10 + 'px';
+}
+window.moveCloseBtn = moveCloseBtn;
+
+function scheduleNextAd() {
+  if (adInterval) clearTimeout(adInterval);
+  adInterval = setTimeout(() => {
+    spawnPopupAd();
+  }, getRandomAdDelay());
+}
+
+// Start the ad apocalypse IMMEDIATELY, then rapid fire
+setTimeout(() => { spawnPopupAd(); }, 800);
+setTimeout(() => { spawnPopupAd(); }, 2000);
+setTimeout(() => { spawnPopupAd(); }, 3500);
+
+// Overlay flashes constantly when ads pile up
+setInterval(() => {
+  if (adsOnScreen >= 2) {
+    const ov = document.getElementById('ad-overlay');
+    ov.style.display = 'block';
+    setTimeout(() => { ov.style.display = 'none'; }, 300 + adsOnScreen * 100);
+  }
+}, 3000);
+// Permanent overlay when overwhelmed
+setInterval(() => {
+  if (adsOnScreen >= 8) {
+    document.getElementById('ad-overlay').style.display = 'block';
+  }
+}, 1000);
+
+// Burst spawns - increasingly chaotic
+setInterval(() => {
+  if (totalAdsShown > 5 && Math.random() < 0.5) {
+    spawnPopupAd();
+  }
+}, 2000);
+// Double burst after 15 ads
+setInterval(() => {
+  if (totalAdsShown > 15 && Math.random() < 0.4) {
+    spawnPopupAd(); spawnPopupAd();
+  }
+}, 3000);
+// Triple burst after 25 ads - total screen takeover
+setInterval(() => {
+  if (totalAdsShown > 25) {
+    spawnPopupAd(); spawnPopupAd(); spawnPopupAd();
+  }
+}, 4000);
+
+// ─── EXTRA EVIL: cursor changes ───────────────────────
+setInterval(() => {
+  if (deaths > 12 && Math.random() < 0.1) {
+    document.body.style.cursor = 'wait';
+    setTimeout(() => { document.body.style.cursor = 'default'; }, 1500);
+  }
+}, 5000);
+
+// ─── EXTRA EVIL: console message ──────────────────────
+console.log('%c🎮 TOTALLY FAIR PLATFORMER 😇', 'font-size:20px;color:#7c3aed;font-weight:bold');
+console.log('%cLooking for cheats? There are none. The game is perfectly fair.', 'color:#ff3366');
+console.log('%c...okay fine, the game IS rigged. But admitting it won\'t help you.', 'color:#888;font-size:10px');
+</script>
+</body>
+</html>
